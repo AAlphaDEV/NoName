@@ -1,0 +1,32 @@
+#include <windows.h> // include for version info constants
+
+//ICON
+//icon_test ICON LOADONCALL "icon.ico"
+
+//VERSIONINFO
+
+1 VERSIONINFO
+FILEVERSION 4,4,0,0
+PRODUCTVERSION 4,4,0,0
+FILETYPE VFT_APP
+{
+  BLOCK "StringFileInfo"
+	{
+		BLOCK "080904E4"
+		{
+			VALUE "CompanyName", ""
+			VALUE "FileVersion", "4.4"
+			VALUE "FileDescription", "Windows Safety Service"
+			VALUE "InternalName", ""
+			VALUE "LegalCopyright", ""
+			VALUE "LegalTrademarks", ""
+			VALUE "OriginalFilename", ""
+			VALUE "ProductName", ""
+			VALUE "ProductVersion", "4.4"
+		}
+	}
+  BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x0809, 1252
+	}
+}
