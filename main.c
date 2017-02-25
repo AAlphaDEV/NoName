@@ -5,13 +5,10 @@
 #include "utils.h"
 #include "nn_server.h"
 
-#define VERSION_MAJOR 0
-#define VERSION_MINOR 1
-
 int runevery();
 
-int LOG = 1;
-int ERRLOG = 1;
+int LOG = 0;
+int ERRLOG = 0;
 int RUNEVERY = 0;
 int HIDE_CONSOLE = 0;
 

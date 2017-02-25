@@ -11,6 +11,8 @@ int action_rege(char *args[], client_t *cl) //name=action_rege - args0=<key> arg
     char *str;
     unsigned long res;
     HKEY global_key;
+    HKEY key;
+    int have_subkey = 1;
 
     if(args[0] == NULL || args[1] == NULL || args[2] == NULL)
     {
@@ -22,12 +24,16 @@ int action_rege(char *args[], client_t *cl) //name=action_rege - args0=<key> arg
     }
 
     str = strchr(args[0], '\\');
-    strcpy(subkey, str+1);
-
-    args[0][(int) (str-args[0])] = '\0';
+    if(str == NULL)
+    {
+        strcpy(subkey, "");
+        have_subkey = 0;
+    } else
+    {
+        strcpy(subkey, str+1);
+        args[0][(int) (str-args[0])] = '\0';
+    }
     strcpy(buffer, args[0]);
-    sprintf(buffer2, "%s - %s\n", buffer, subkey);
-    a_printf("action_regv", buffer2);
 
     if(strcmp(buffer, "HKEY_CURRENT_USER") == 0)
         global_key = HKEY_CURRENT_USER;
@@ -53,20 +59,27 @@ int action_rege(char *args[], client_t *cl) //name=action_rege - args0=<key> arg
 
     unsigned long length = strlen(value);
 
-    HKEY key;
-    res = RegOpenKeyEx(global_key, subkey, 0, KEY_SET_VALUE, &key);
-    if(res != ERROR_SUCCESS)
+    if(have_subkey)
     {
-        char *s = NULL;
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL, res,
-                       MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
-                       (LPSTR)&s, 0, NULL);
-        sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
-        a_printf("action_rege", buffer);
-        send_failed(cl->s, "action_rege", buffer);
+        res = RegOpenKeyEx(global_key, subkey, 0, KEY_SET_VALUE, &key);
+        if(res != ERROR_SUCCESS)
+        {
+            char *s = NULL;
+            FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL, res,
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
+                           (LPSTR)&s, 0, NULL);
+            sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
+            a_printf("action_rege", buffer);
+            send_failed(cl->s, "action_rege", buffer);
 
-        return 2;
+            if(have_subkey)
+                RegCloseKey(key);
+            return 2;
+        }
+    } else
+    {
+        key = global_key;
     }
 
     res = RegSetValueEx(key, val_name, 0, REG_SZ, (LPBYTE) value, length);
@@ -81,12 +94,16 @@ int action_rege(char *args[], client_t *cl) //name=action_rege - args0=<key> arg
         a_printf("action_rege", buffer);
         send_failed(cl->s, "action_rege", buffer);
 
+        if(have_subkey)
+            RegCloseKey(key);
         return 3;
     }
 
     strcpy(buffer, "result/action=\"action_rege\"/success//");
     safe_send(cl->s, buffer, strlen(buffer), 0);
 
+    if(have_subkey)
+        RegCloseKey(key);
     return 0;
 }
 
@@ -101,6 +118,7 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
     char buffer2[512];
     unsigned long buf_sz = 512;
 
+    int have_subkey = 1;
     HKEY global_key;
     char subkey[512];
     char *str;
@@ -115,11 +133,16 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
     }
 
     str = strchr(args[0], '\\');
-    strcpy(subkey, str+1);
-
-    args[0][(int) (str-args[0])] = '\0';
+    if(str == NULL)
+    {
+        strcpy(subkey, "");
+        have_subkey = 0;
+    } else
+    {
+        strcpy(subkey, str+1);
+        args[0][(int) (str-args[0])] = '\0';
+    }
     strcpy(buffer, args[0]);
-    printf("%s - %s\n", buffer, subkey);
 
     if(strcmp(buffer, "HKEY_CURRENT_USER") == 0)
         global_key = HKEY_CURRENT_USER;
@@ -140,19 +163,25 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
         return 4;
     }
 
-    res = RegOpenKeyEx(global_key, subkey, 0, KEY_READ, &key);
-    if(res != ERROR_SUCCESS)
+    if(have_subkey)
     {
-        char *s = NULL;
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL, res,
-                       MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
-                       (LPSTR)&s, 0, NULL);
-        sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
-        a_printf("action_regs", buffer);
+        res = RegOpenKeyEx(global_key, subkey, 0, KEY_READ, &key);
+        if(res != ERROR_SUCCESS)
+        {
+            char *s = NULL;
+            FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL, res,
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
+                           (LPSTR)&s, 0, NULL);
+            sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
+            a_printf("action_regs", buffer);
 
-        send_failed(cl->s, "action_regs", buffer);
-        return 2;
+            send_failed(cl->s, "action_regs", buffer);
+            return 2;
+        }
+    } else
+    {
+        key = global_key;
     }
 
     res = RegQueryInfoKey(key, NULL, NULL, NULL, &sk_count, NULL, NULL, &val_count, NULL, NULL, NULL, NULL);
@@ -167,11 +196,17 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
         a_printf("action_regs", buffer);
 
         send_failed(cl->s, "action_regs", buffer);
+        if(have_subkey)
+            RegCloseKey(key);
         return 3;
     }
 
     strcpy(ubuffer, "result/action=\"action_regs\"/");
 
+    if(sk_count <= 0)
+    {
+        strcat(ubuffer, "\"[NO SUBKEYS]\"");
+    }
     int i;
     for(i = 0; i<sk_count; i++)
     {
@@ -192,6 +227,8 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
             a_printf("action_regs", buffer);
 
             send_failed(cl->s, "action_regs", buffer);
+            if(have_subkey)
+                RegCloseKey(key);
             return 4;
         }
     }
@@ -217,6 +254,8 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
             a_printf("action_regs", buffer);
 
             send_failed(cl->s, "action_regs", buffer);
+            if(have_subkey)
+                RegCloseKey(key);
             return 5;
         }
     }
@@ -224,10 +263,12 @@ int action_regs(char *args[], client_t *cl) //name=action_regs - arg0=<key> | re
     strcat(ubuffer, "//");
     safe_send(cl->s, ubuffer, strlen(ubuffer), 0);
 
+    if(have_subkey)
+        RegCloseKey(key);
     return 0;
 }
 
-int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> args1=<value_name>
+int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> args1=<value_name> | result/action=\"action_regv\"/<val_name>/<value>//
 {
     char val_name[128];
     char subkey[512];
@@ -237,6 +278,8 @@ int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> arg
     char *str;
     unsigned long res;
     HKEY global_key;
+    HKEY key;
+    int have_subkey = 1;
 
     if(args[0] == NULL || args[1] == NULL)
     {
@@ -248,12 +291,16 @@ int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> arg
     }
 
     str = strchr(args[0], '\\');
-    strcpy(subkey, str+1);
-
-    args[0][(int) (str-args[0])] = '\0';
+    if(str == NULL)
+    {
+        strcpy(subkey, "");
+        have_subkey = 0;
+    } else
+    {
+        strcpy(subkey, str+1);
+        args[0][(int) (str-args[0])] = '\0';
+    }
     strcpy(buffer, args[0]);
-    sprintf(buffer2, "%s - %s\n", buffer, subkey);
-    a_printf("action_regv", buffer2);
 
     if(strcmp(buffer, "HKEY_CURRENT_USER") == 0)
         global_key = HKEY_CURRENT_USER;
@@ -276,20 +323,25 @@ int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> arg
 
     strcpy(val_name,args[1]);
 
-    HKEY key;
-    res = RegOpenKeyEx(global_key, subkey, 0, KEY_READ, &key);
-    if(res != ERROR_SUCCESS)
+    if(have_subkey)
     {
-        char *s = NULL;
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                       NULL, res,
-                       MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
-                       (LPSTR)&s, 0, NULL);
-        sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
-        a_printf("action_regv", buffer);
-        send_failed(cl->s, "action_regv", buffer);
+        res = RegOpenKeyEx(global_key, subkey, 0, KEY_READ, &key);
+        if(res != ERROR_SUCCESS)
+        {
+            char *s = NULL;
+            FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+                           NULL, res,
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
+                           (LPSTR)&s, 0, NULL);
+            sprintf(buffer, "Error while opening key : %s (errcode=%ld)", s, res);
+            a_printf("action_regv", buffer);
+            send_failed(cl->s, "action_regv", buffer);
 
-        return 2;
+            return 2;
+        }
+    } else
+    {
+        key = global_key;
     }
 
     unsigned long type;
@@ -304,10 +356,12 @@ int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> arg
                        NULL, res,
                        MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
                        (LPSTR)&s, 0, NULL);
-        sprintf(buffer, "Error while setting value : %s (errcode=%ld)", s, res);
+        sprintf(buffer, "Error while querying value : %s (errcode=%ld)", s, res);
         a_printf("action_regv", buffer);
         send_failed(cl->s, "action_regv", buffer);
 
+        if(have_subkey)
+            RegCloseKey(key);
         return 3;
     }
     value[buf_len] = '\0';
@@ -315,5 +369,7 @@ int action_regv(char *args[], client_t *cl) //name=action_regv - args0=<key> arg
     sprintf(buffer, "result/action=\"action_regv\"/%s/%s//", val_name, value);
     safe_send(cl->s, buffer, strlen(buffer), 0);
 
+    if(have_subkey)
+        RegCloseKey(key);
     return 0;
 }

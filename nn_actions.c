@@ -56,9 +56,8 @@ int do_action(const char *id, char *args[], client_t *cl) //Return -1 if no acti
             printf("\t\taction_%s over, return code=%d.\n", actions[i].name, r);
             return r;
         }
-    }return
-
-     -1;
+    }
+    return -1;
 }
 
 /**** Actions utils ****/

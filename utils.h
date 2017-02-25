@@ -1,13 +1,13 @@
 #ifndef UTILS_H
 #define UTILS_H
 
-
 #include <windows.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+
+#include "version.h"
 
 struct client_t {
     SOCKET s;

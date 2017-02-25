@@ -167,7 +167,7 @@ void *cl_manager_thread(void *arg)
 
     printf("New client accepted, id : %d.\n", cl_id);
 
-    sprintf(buffer, "accepted/id=%d//", cl_id);
+    sprintf(buffer, "accepted/id=%d/version=\"%d.%d\"//", cl_id, VERSION_MAJOR, VERSION_MINOR);
     safe_send(cl, buffer, strlen(buffer), 0); //SEND
 
     while(1)
